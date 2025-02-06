@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple
 class RemoteConfig:
     """Single remote connection description"""
 
-    # remote machine's hostname
+    # remote machine's hostname, with optional username@ prefix
     host: str
     # relative path to the working directory on remote machine starting from user home dir
     directory: Path

@@ -3,8 +3,8 @@ import hashlib
 from pathlib import Path
 
 DEFAULT_REMOTE_ROOT = ".remotes"
-HOST_REGEX = r"[-\w]+(\.[-\w]+)*"
-PATH_REGEX = r"/?[-.\w\s]+(/[-.\w\s]+)*/?"
+HOST_REGEX = r"([-\w]+@)?[-\w]+(\.[-\w]+)*"
+PATH_REGEX = r"/?[-.\w\s][-.\w\s:]*(/[-.\w\s:]+)*/?"
 
 
 def hash_path(path: Path):

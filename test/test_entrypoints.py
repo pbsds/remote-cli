@@ -86,8 +86,14 @@ def test_log_exceptions_decorator():
         ("ho-st.dom-ain.as1234:/home/dir", True),
         ("ho-st.dom-ain.as1234:.home/dir.dir", True),
         ("ho-st.dom-ain.as1234:.home/dir.dir/123/", True),
-        ("ho-st.dom-ain.as1234:.home/dir.dir/123/:something", False),
+        ("ho-st.dom-ain.as1234:.home/dir.dir/123/:something", True),
         ("ho-st.dom-ain.as1234::/home/dir", False),
+        ("some_user@host", True),
+        ("some user@host", False),
+        ("some:user@host", False),
+        ("user@host:", False),
+        ("user@:/home/dir", False),
+        ("@host:/home/dir", False),
     ],
 )
 def test_validate_connection_string(connection, is_valid):
@@ -282,7 +288,7 @@ def test_remote_init_fails_on_input_validation(tmp_path):
     runner = CliRunner()
 
     with cwd(tmp_path):
-        result = runner.invoke(entrypoints.remote_init, ["host:path:path"])
+        result = runner.invoke(entrypoints.remote_init, ["@host:path:more-path"])
 
     assert result.exit_code == 2
 
@@ -313,7 +319,7 @@ def test_remote_add_fails_on_input_validation(tmp_path):
     runner = CliRunner()
 
     with cwd(tmp_path):
-        result = runner.invoke(entrypoints.remote_add, ["host:path:path"])
+        result = runner.invoke(entrypoints.remote_add, ["@host:path:more-path"])
 
     assert result.exit_code == 2
 

@@ -79,12 +79,14 @@ def _add_remote_host(config: WorkspaceConfig, connection: str):
     """Add a new remote host to the workspace config, check the connection, and save it if connection is ok
 
     :param config: the workspace config decription object
-    :param connection: connection string in format of 'host-name[:remote_dir]'
+    :param connection: connection string in format of '[user@]host-name[:remote_dir]'
     """
-    parts = connection.split(":")
-    remote_host = parts[0]
+    remote_host, sep, path = connection.partition(":")
     config_medium = get_configuration_medium(config)
-    remote_dir = config_medium.generate_remote_directory(config) if len(parts) == 1 else Path(parts[1])
+    if sep:
+        remote_dir = Path(path)
+    else:
+        remote_dir = config_medium.generate_remote_directory(config)
 
     added, index = config.add_remote_host(remote_host, remote_dir)
     if not added:
@@ -108,7 +110,7 @@ def _add_remote_host(config: WorkspaceConfig, connection: str):
 
 
 @click.command(context_settings=DEFAULT_CONTEXT_SETTINGS)
-@click.argument("connection", metavar="host-name[:remote_dir]", callback=validate_connection_string)
+@click.argument("connection", metavar="[user@]host-name[:remote_dir]", callback=validate_connection_string)
 @log_exceptions
 def remote_add(connection: str):
     """Add one more host for remote connection to a config file"""
@@ -118,7 +120,7 @@ def remote_add(connection: str):
 
 
 @click.command(context_settings=DEFAULT_CONTEXT_SETTINGS)
-@click.argument("connection", metavar="host-name[:remote_dir]", callback=validate_connection_string)
+@click.argument("connection", metavar="[user@]host-name[:remote_dir]", callback=validate_connection_string)
 @log_exceptions
 def remote_init(connection: str):
     """Initiate workspace for the remote execution in the current working directory"""
