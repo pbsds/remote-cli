@@ -27,6 +27,24 @@ TEST_HOST = "test-host1.example.com"
 TEST_DIR = ".remotes/my project"
 TEST_CONFIG = f"{TEST_HOST}:{shlex.quote(TEST_DIR)}"
 
+TEST_HOSTS = [
+    ("host", True),
+    ("host123", True),
+    ("host.domain.com", True),
+    ("ho-st.dom-ain.as1234", True),
+    ("ho-st.dom-ain.as1234:/home/dir", True),
+    ("ho-st.dom-ain.as1234:.home/dir.dir", True),
+    ("ho-st.dom-ain.as1234:.home/dir.dir/123/", True),
+    ("ho-st.dom-ain.as1234:.home/dir.dir/123/:something", True),
+    ("ho-st.dom-ain.as1234::/home/dir", False),
+    ("some_user@host", True),
+    ("some user@host", False),
+    ("some:user@host", False),
+    ("user@host:", False),
+    ("user@:/home/dir", False),
+    ("@host:/home/dir", False),
+]
+
 
 @contextmanager
 def cwd(path):
@@ -76,26 +94,7 @@ def test_log_exceptions_decorator():
         test_function(0)
 
 
-@pytest.mark.parametrize(
-    "connection, is_valid",
-    [
-        ("host", True),
-        ("host123", True),
-        ("host.domain.com", True),
-        ("ho-st.dom-ain.as1234", True),
-        ("ho-st.dom-ain.as1234:/home/dir", True),
-        ("ho-st.dom-ain.as1234:.home/dir.dir", True),
-        ("ho-st.dom-ain.as1234:.home/dir.dir/123/", True),
-        ("ho-st.dom-ain.as1234:.home/dir.dir/123/:something", True),
-        ("ho-st.dom-ain.as1234::/home/dir", False),
-        ("some_user@host", True),
-        ("some user@host", False),
-        ("some:user@host", False),
-        ("user@host:", False),
-        ("user@:/home/dir", False),
-        ("@host:/home/dir", False),
-    ],
-)
+@pytest.mark.parametrize("connection, is_valid", TEST_HOSTS)
 def test_validate_connection_string(connection, is_valid):
     if is_valid:
         entrypoints.validate_connection_string(None, None, connection)
@@ -284,11 +283,12 @@ If you want to add a new host to it, please use remote-add.
     assert (tmp_workspace / CONFIG_FILE_NAME).read_text() == f"{TEST_CONFIG}\n"
 
 
-def test_remote_init_fails_on_input_validation(tmp_path):
+@pytest.mark.parametrize("connection", [connection for connection, is_valid in TEST_HOSTS if not is_valid])
+def test_remote_init_fails_on_input_validation(tmp_path, connection):
     runner = CliRunner()
 
     with cwd(tmp_path):
-        result = runner.invoke(entrypoints.remote_init, ["@host:path:more-path"])
+        result = runner.invoke(entrypoints.remote_init, [connection])
 
     assert result.exit_code == 2
 
@@ -315,11 +315,12 @@ def test_remote_commands_fail_on_no_workspace(tmp_path):
         assert result.output == f"Cannot resolve the remote workspace in {tmp_path}\n"
 
 
-def test_remote_add_fails_on_input_validation(tmp_path):
+@pytest.mark.parametrize("connection", [connection for connection, is_valid in TEST_HOSTS if not is_valid])
+def test_remote_add_fails_on_input_validation(tmp_path, connection):
     runner = CliRunner()
 
     with cwd(tmp_path):
-        result = runner.invoke(entrypoints.remote_add, ["@host:path:more-path"])
+        result = runner.invoke(entrypoints.remote_add, [connection])
 
     assert result.exit_code == 2
 
