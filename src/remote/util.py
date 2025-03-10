@@ -217,6 +217,15 @@ def rsync(
     if extra_args:
         args.extend(extra_args)
 
+    # https://man.archlinux.org/man/extra/rsync/rsync.1.en#FILTER_RULES
+    if (
+        not (includes or extra_args or mirror)
+        and excludes is not None
+        and any(exclude in ("*", "**", "***") for exclude in excludes)
+    ):
+        logger.info("Skipping sync due to '*' in excludes and no includes")
+        return
+
     cleanup: List[Path] = []
     # It is important to add include patterns before exclude patters because rsync might ignore includes if you do otherwise.
     _gen_rsync_patterns_file(includes, "--include-from", args, cleanup)

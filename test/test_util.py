@@ -1,3 +1,4 @@
+import functools
 import sys
 
 from unittest.mock import MagicMock, patch
@@ -73,6 +74,56 @@ def test_rsync_copies_files_with_mirror(tmp_path, rsync_ssh):
     assert (dst / "third.txt").exists()
     assert (dst / "third.txt").read_text() == "TEST third"
     assert not (dst / "fourth.txt").exists()
+
+
+@pytest.mark.parametrize(
+    "should_be_skipped, includes, excludes",
+    [
+        (False, [], []),
+        (False, ["/.remoteenv"], ["*", "foobar"]),
+        (False, ["/.remoteenv"], ["*"]),
+        (False, ["/.remoteenv"], ["**"]),
+        (False, ["/.remoteenv"], ["***"]),
+        (True, [], ["*", "foobar"]),
+        (True, [], ["*"]),
+        (True, [], ["**", "foobar"]),
+        (True, [], ["**"]),
+        (True, [], ["***", "foobar"]),
+        (True, [], ["***"]),
+    ],
+)
+@patch("remote.util.subprocess.run")
+def test_rsync_skip_on_globstar_exclude(mock_run, rsync_ssh, should_be_skipped, includes, excludes):
+    mock_run.return_value = MagicMock(returncode=0)
+
+    rsync_with = functools.partial(
+        rsync,
+        "src/",
+        "dst",
+        rsync_ssh,
+        info=True,
+        verbose=True,
+        mirror=False,
+        dry_run=True,
+        includes=includes,
+        excludes=excludes,
+    )
+
+    rsync_with(mirror=False, extra_args=None)
+    if should_be_skipped:
+        mock_run.assert_not_called()
+    else:
+        mock_run.assert_called_once()
+
+    mock_run.reset_mock()
+
+    rsync_with(mirror=False, extra_args=["--some-extra"])
+    mock_run.assert_called_once()
+
+    mock_run.reset_mock()
+
+    rsync_with(mirror=True, extra_args=None)
+    mock_run.assert_called_once()
 
 
 @patch("remote.util.subprocess.run")
